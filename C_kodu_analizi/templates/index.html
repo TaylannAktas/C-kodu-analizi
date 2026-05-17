@@ -1,0 +1,591 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>C Kodu Zafiyet Analizi</title>
+  <style>
+    :root {
+      --bg: #020602;
+      --card: #081308;
+      --text: #b8ffb8;
+      --muted: #66cf66;
+      --line: #1f4f1f;
+      --primary: #3cff88;
+      --primary-dark: #27d66d;
+      --danger: #ff5d7a;
+      --danger-bg: #2a0d14;
+      --warn: #ffd166;
+      --warn-bg: #2c2510;
+      --ok: #5cff8d;
+      --ok-bg: #0f2a16;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Consolas, "Courier New", monospace;
+      color: var(--text);
+      background: radial-gradient(circle at top, #0d1d0d 0%, #020602 55%, #010301 100%);
+      text-shadow: 0 0 5px rgba(92, 255, 141, 0.18);
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background: repeating-linear-gradient(
+        to bottom,
+        rgba(92, 255, 141, 0.03) 0px,
+        rgba(92, 255, 141, 0.03) 1px,
+        transparent 2px,
+        transparent 4px
+      );
+    }
+
+    .container {
+      max-width: 1080px;
+      margin: 30px auto;
+      padding: 0 18px 20px;
+    }
+
+    .header {
+      margin-bottom: 16px;
+    }
+
+    .header h1 {
+      margin: 0 0 6px;
+      font-size: 28px;
+    }
+
+    .header p {
+      margin: 0;
+      color: var(--muted);
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      box-shadow: 0 0 0 1px rgba(92, 255, 141, 0.08), 0 16px 34px rgba(0, 0, 0, 0.55);
+    }
+
+    .input-card {
+      padding: 16px;
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 380px;
+      border: 1px solid #2a6b2a;
+      border-radius: 12px;
+      padding: 14px;
+      font-family: Consolas, "Courier New", monospace;
+      font-size: 14px;
+      line-height: 1.45;
+      resize: vertical;
+      outline: none;
+      background: #030a03;
+      color: #c6ffc6;
+    }
+
+    textarea::placeholder {
+      color: #4ca54c;
+    }
+
+    textarea:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(60, 255, 136, 0.2), 0 0 18px rgba(60, 255, 136, 0.28);
+    }
+
+    .actions {
+      margin-top: 12px;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    button {
+      border: 0;
+      border-radius: 10px;
+      padding: 10px 16px;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: inherit;
+    }
+
+    #scanButton {
+      background: var(--primary);
+      color: #032f12;
+      box-shadow: 0 0 16px rgba(60, 255, 136, 0.3);
+    }
+
+    #scanButton:hover {
+      background: var(--primary-dark);
+    }
+
+    #clearButton {
+      background: #132313;
+      color: #a9fba9;
+      border: 1px solid #2a5f2a;
+    }
+
+    button:disabled {
+      opacity: 0.65;
+      cursor: not-allowed;
+    }
+
+    .results {
+      margin-top: 18px;
+      display: none;
+      padding: 16px;
+    }
+
+    .results.show {
+      display: block;
+    }
+
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .summary-item {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 10px 12px;
+      background: #061106;
+    }
+
+    .summary-item.clickable {
+      cursor: pointer;
+      transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+    }
+
+    .summary-item.clickable:hover {
+      transform: translateY(-1px);
+      border-color: #3a8b3a;
+      box-shadow: 0 0 14px rgba(60, 255, 136, 0.15);
+    }
+
+    .summary-title {
+      color: var(--muted);
+      font-size: 13px;
+      margin-bottom: 5px;
+    }
+
+    .summary-value {
+      font-size: 24px;
+      font-weight: 700;
+    }
+
+    .section-title {
+      margin: 14px 0 8px;
+      font-size: 16px;
+    }
+
+    .detail-panel {
+      display: none;
+      margin: 12px 0 6px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 12px;
+      background: #061106;
+    }
+
+    .detail-panel.show {
+      display: block;
+    }
+
+    .detail-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+
+    .detail-head h3 {
+      margin: 0;
+      font-size: 14px;
+      color: #9eff9e;
+    }
+
+    .detail-close {
+      border: 1px solid #2a5f2a;
+      background: #132313;
+      color: #a9fba9;
+      border-radius: 8px;
+      padding: 4px 10px;
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 12px;
+    }
+
+    .detail-list {
+      margin: 0;
+      padding-left: 18px;
+      display: grid;
+      gap: 5px;
+      color: #bfffbf;
+    }
+
+    .status-table {
+      width: 100%;
+      border-collapse: collapse;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: #061106;
+    }
+
+    .status-table th,
+    .status-table td {
+      text-align: left;
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--line);
+      font-size: 14px;
+    }
+
+    .status-table th {
+      color: #8eff8e;
+      background: #0b1b0b;
+    }
+
+    .status-table tr:last-child td {
+      border-bottom: 0;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 4px 9px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .badge-risk {
+      color: var(--danger);
+      background: var(--danger-bg);
+    }
+
+    .badge-safe {
+      color: var(--ok);
+      background: var(--ok-bg);
+    }
+
+    .vuln-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .vuln-item {
+      border: 1px solid var(--line);
+      border-left: 6px solid var(--danger);
+      border-radius: 10px;
+      padding: 12px;
+      background: #0f0a0d;
+    }
+
+    .vuln-item.medium {
+      border-left-color: var(--warn);
+      background: #191509;
+    }
+
+    .vuln-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 8px;
+      flex-wrap: wrap;
+    }
+
+    .vuln-meta {
+      color: var(--muted);
+      font-size: 13px;
+      margin-bottom: 6px;
+      font-family: Consolas, "Courier New", monospace;
+    }
+
+    .empty-state {
+      border: 1px dashed var(--line);
+      border-radius: 10px;
+      padding: 14px;
+      background: #071207;
+      color: var(--muted);
+    }
+
+    .error {
+      margin-top: 10px;
+      color: var(--danger);
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>C Kodu Zafiyet Analizi</h1>
+      <p>Kodu asagidaki alana yapistir, sistem 9 fonksiyon icin zafiyet durumunu okunabilir bicimde gostersin.</p>
+    </div>
+
+    <section class="card input-card">
+      <textarea id="codeInput" placeholder="Ornek:
+int main() {
+  char buf[16];
+  gets(buf);
+  return 0;
+}"></textarea>
+      <div class="actions">
+        <button id="scanButton">Analiz Et</button>
+        <button id="clearButton" type="button">Temizle</button>
+      </div>
+      <div id="errorText" class="error"></div>
+    </section>
+
+    <section id="results" class="card results">
+      <div class="summary-grid">
+        <div id="trackedFnCard" class="summary-item clickable" title="Tum analiz fonksiyonlarini goster">
+          <div class="summary-title">Analiz Kapsami (Fonksiyon)</div>
+          <div id="trackedFn" class="summary-value">0</div>
+        </div>
+        <div id="presentFnCard" class="summary-item">
+          <div class="summary-title">Kodda Bulunan (Fonksiyon)</div>
+          <div id="presentFn" class="summary-value">0</div>
+        </div>
+        <div class="summary-item">
+          <div class="summary-title">Toplam Fonksiyon Cagrisi</div>
+          <div id="totalCall" class="summary-value">0</div>
+        </div>
+        <div id="vulnCallCard" class="summary-item clickable" title="Zafiyetli fonksiyonlari ve satirlari goster">
+          <div class="summary-title">Zafiyet Olusturan Cagri</div>
+          <div id="vulnCall" class="summary-value">0</div>
+        </div>
+      </div>
+
+      <div id="detailPanel" class="detail-panel">
+        <div class="detail-head">
+          <h3 id="detailTitle"></h3>
+          <button id="detailClose" class="detail-close" type="button">Kapat</button>
+        </div>
+        <div id="detailBody"></div>
+      </div>
+
+      <h2 class="section-title">Kodda Bulunan Analiz Fonksiyonlari</h2>
+      <table class="status-table">
+        <thead>
+          <tr>
+            <th>Fonksiyon</th>
+            <th>Kodda Bulunan Adet</th>
+            <th>Zafiyetli Adet</th>
+          </tr>
+        </thead>
+        <tbody id="statusRows"></tbody>
+      </table>
+
+      <h2 class="section-title">Detayli Bulgular</h2>
+      <div id="vulnList" class="vuln-list"></div>
+    </section>
+  </div>
+
+  <script>
+    const scanButton = document.getElementById("scanButton");
+    const clearButton = document.getElementById("clearButton");
+    const codeInput = document.getElementById("codeInput");
+    const results = document.getElementById("results");
+    const errorText = document.getElementById("errorText");
+
+    const trackedFn = document.getElementById("trackedFn");
+    const presentFn = document.getElementById("presentFn");
+    const totalCall = document.getElementById("totalCall");
+    const vulnCall = document.getElementById("vulnCall");
+    const trackedFnCard = document.getElementById("trackedFnCard");
+    const vulnCallCard = document.getElementById("vulnCallCard");
+    const statusRows = document.getElementById("statusRows");
+    const vulnList = document.getElementById("vulnList");
+    const detailPanel = document.getElementById("detailPanel");
+    const detailTitle = document.getElementById("detailTitle");
+    const detailBody = document.getElementById("detailBody");
+    const detailClose = document.getElementById("detailClose");
+
+    let lastStatusMap = {};
+    let lastVulnItems = [];
+
+    function showDetail(title, contentHtml) {
+      detailTitle.textContent = title;
+      detailBody.innerHTML = contentHtml;
+      detailPanel.classList.add("show");
+    }
+
+    function hideDetail() {
+      detailPanel.classList.remove("show");
+      detailTitle.textContent = "";
+      detailBody.innerHTML = "";
+    }
+
+    function showTrackedFunctionsDetail() {
+      const names = Object.keys(lastStatusMap || {});
+      if (names.length === 0) {
+        showDetail("Analiz Kapsamindaki Fonksiyonlar", "<div class='empty-state'>Once bir analiz calistirin.</div>");
+        return;
+      }
+
+      const sorted = [...names].sort((a, b) => a.localeCompare(b));
+      const items = sorted.map((name) => `<li>${name}</li>`).join("");
+      showDetail("Analiz Kapsamindaki Tum Fonksiyonlar", `<ol class="detail-list">${items}</ol>`);
+    }
+
+    function showVulnerableFunctionsDetail() {
+      if (!lastVulnItems || lastVulnItems.length === 0) {
+        showDetail("Zafiyet Iceren Fonksiyonlar", "<div class='empty-state'>Zafiyetli fonksiyon bulunmadi.</div>");
+        return;
+      }
+
+      const satirHaritasi = new Map();
+      for (const item of lastVulnItems) {
+        const fonksiyon = item.fonksiyon || "bilinmiyor";
+        if (!satirHaritasi.has(fonksiyon)) {
+          satirHaritasi.set(fonksiyon, new Set());
+        }
+        satirHaritasi.get(fonksiyon).add(Number(item.satir_no));
+      }
+
+      const rows = Array.from(satirHaritasi.entries())
+        .sort((a, b) => a[0].localeCompare(b[0]))
+        .map(([fonksiyon, satirSet]) => {
+          const satirlar = Array.from(satirSet).filter(Number.isFinite).sort((a, b) => a - b);
+          return `<li><strong>${fonksiyon}</strong> -> satirlar: ${satirlar.join(", ") || "-"}</li>`;
+        })
+        .join("");
+
+      showDetail("Zafiyet Iceren Fonksiyonlar ve Satirlari", `<ul class="detail-list">${rows}</ul>`);
+    }
+
+    function clearResults() {
+      errorText.textContent = "";
+      results.classList.remove("show");
+      trackedFn.textContent = "0";
+      presentFn.textContent = "0";
+      totalCall.textContent = "0";
+      vulnCall.textContent = "0";
+      statusRows.innerHTML = "";
+      vulnList.innerHTML = "";
+      lastStatusMap = {};
+      lastVulnItems = [];
+      hideDetail();
+    }
+
+    function renderFunctionSummary(statusMap) {
+      const entries = Object.entries(statusMap || {});
+      const usedEntries = entries
+        .filter(([, info]) => (info.kullanim_sayisi || 0) > 0)
+        .sort((a, b) => (b[1].kullanim_sayisi || 0) - (a[1].kullanim_sayisi || 0));
+
+      const toplamCagri = usedEntries.reduce((acc, [, info]) => acc + (info.kullanim_sayisi || 0), 0);
+      const toplamZafiyetliCagri = usedEntries.reduce((acc, [, info]) => acc + (info.bulgu_sayisi || 0), 0);
+
+      trackedFn.textContent = String(entries.length);
+      presentFn.textContent = String(usedEntries.length);
+      totalCall.textContent = String(toplamCagri);
+      vulnCall.textContent = String(toplamZafiyetliCagri);
+      lastStatusMap = statusMap || {};
+
+      statusRows.innerHTML = "";
+      if (usedEntries.length === 0) {
+        statusRows.innerHTML = `<tr><td colspan="3">Kodda analiz kapsamindaki fonksiyonlardan bulunamadi.</td></tr>`;
+        return;
+      }
+
+      for (const [name, info] of usedEntries) {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td><strong>${name}</strong></td>
+          <td>${info.kullanim_sayisi || 0}</td>
+          <td>${info.bulgu_sayisi || 0}</td>
+        `;
+        statusRows.appendChild(tr);
+      }
+    }
+
+    function renderVulnerabilities(items) {
+      lastVulnItems = items || [];
+      vulnList.innerHTML = "";
+      if (!items || items.length === 0) {
+        vulnList.innerHTML = `<div class="empty-state">Bu kodda tespit edilen bir zafiyet yok.</div>`;
+        return;
+      }
+
+      for (const item of items) {
+        const level = String(item.siddet || "").toLowerCase();
+        const cssLevel = level === "orta" ? "medium" : "high";
+        const severityBadge = level === "orta"
+          ? `<span class="badge" style="background: var(--warn-bg); color: var(--warn);">ORTA</span>`
+          : `<span class="badge" style="background: var(--danger-bg); color: var(--danger);">YUKSEK</span>`;
+
+        const wrapper = document.createElement("article");
+        wrapper.className = `vuln-item ${cssLevel}`;
+        wrapper.innerHTML = `
+          <div class="vuln-head">
+            <strong>${item.fonksiyon}</strong>
+            ${severityBadge}
+          </div>
+          <div class="vuln-meta">Satir: ${item.satir_no} | Kod: ${item.kod_satiri || "-"}</div>
+          <div>${item.sebep || ""}</div>
+        `;
+        vulnList.appendChild(wrapper);
+      }
+    }
+
+    async function scanCode() {
+      const code = codeInput.value.trim();
+      clearResults();
+
+      if (!code) {
+        errorText.textContent = "Lutfen once C kodu girin.";
+        return;
+      }
+
+      scanButton.disabled = true;
+      scanButton.textContent = "Analiz ediliyor...";
+
+      try {
+        const response = await fetch("/api/scan", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ code })
+        });
+
+        const data = await response.json();
+        if (!response.ok) {
+          throw new Error(data.error || "Analiz sirasinda bir hata olustu.");
+        }
+
+        renderFunctionSummary(data.fonksiyon_durumlari);
+        renderVulnerabilities(data.zafiyetler || []);
+        results.classList.add("show");
+      } catch (error) {
+        errorText.textContent = error.message;
+      } finally {
+        scanButton.disabled = false;
+        scanButton.textContent = "Analiz Et";
+      }
+    }
+
+    scanButton.addEventListener("click", scanCode);
+    trackedFnCard.addEventListener("click", showTrackedFunctionsDetail);
+    vulnCallCard.addEventListener("click", showVulnerableFunctionsDetail);
+    detailClose.addEventListener("click", hideDetail);
+    clearButton.addEventListener("click", () => {
+      codeInput.value = "";
+      clearResults();
+    });
+  </script>
+</body>
+</html>
