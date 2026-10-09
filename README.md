@@ -1,5 +1,7 @@
 # C Kodu Zafiyet Analizi
 
+[![Testler](https://github.com/TaylannAktas/C-kodu-analizi/actions/workflows/testler.yml/badge.svg)](https://github.com/TaylannAktas/C-kodu-analizi/actions/workflows/testler.yml)
+
 C kaynak kodunu tarayıp tampon taşması, format string ve komut enjeksiyonu gibi zafiyetlere yol açan riskli fonksiyon kullanımlarını satır satır raporlayan statik analiz aracı. Web arayüzü, komut satırı aracı ve JSON API olarak kullanılabilir.
 
 > **English:** A lightweight static analyzer that scans C source code for risky uses of nine commonly misused libc functions (`gets`, `scanf`, `memcpy`, `strcpy`, `sprintf`, `strcat`, `free`, `system`, `printf`) and reports each finding with its line number, severity and an explanation. Ships with a Flask web UI, a CLI and a JSON API. The interface and findings are in Turkish.
