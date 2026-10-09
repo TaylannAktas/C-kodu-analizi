@@ -1,3 +1,5 @@
+import sys
+
 from analyzer import kodu_tara, fonksiyon_durumlarini_hesapla
 
 
@@ -47,7 +49,11 @@ def sonucu_yazdir(zafiyetler, fonksiyon_durumlari):
 
 
 if __name__ == "__main__":
-    c_kodu = c_kodunu_oku()
+    if len(sys.argv) > 1:
+        with open(sys.argv[1], encoding="utf-8") as dosya:
+            c_kodu = dosya.read()
+    else:
+        c_kodu = c_kodunu_oku()
     if not c_kodu.strip():
         print("Kod girilmedi.")
         raise SystemExit(1)

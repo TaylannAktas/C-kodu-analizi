@@ -1,4 +1,6 @@
 # app.py
+import os
+
 from flask import Flask, request, jsonify, render_template
 from flask_cors import CORS
 from analyzer import kodu_tara, fonksiyon_durumlarini_hesapla
@@ -43,4 +45,5 @@ def scan_endpoint():
 
 if __name__ == '__main__':
     print("Siber Tarayici Backend Basladi: http://localhost:5000")
-    app.run(debug=True, port=5000)
+    # Hata ayıklama modu yalnızca FLASK_DEBUG=1 verildiğinde açılır
+    app.run(debug=os.environ.get("FLASK_DEBUG") == "1", port=5000)

@@ -333,11 +333,11 @@
   <div class="container">
     <div class="header">
       <h1>C Kodu Zafiyet Analizi</h1>
-      <p>Kodu asagidaki alana yapistir, sistem 9 fonksiyon icin zafiyet durumunu okunabilir bicimde gostersin.</p>
+      <p>Kodu aşağıdaki alana yapıştır, sistem 9 fonksiyon için zafiyet durumunu okunabilir biçimde göstersin.</p>
     </div>
 
     <section class="card input-card">
-      <textarea id="codeInput" placeholder="Ornek:
+      <textarea id="codeInput" placeholder="Örnek:
 int main() {
   char buf[16];
   gets(buf);
@@ -352,8 +352,8 @@ int main() {
 
     <section id="results" class="card results">
       <div class="summary-grid">
-        <div id="trackedFnCard" class="summary-item clickable" title="Tum analiz fonksiyonlarini goster">
-          <div class="summary-title">Analiz Kapsami (Fonksiyon)</div>
+        <div id="trackedFnCard" class="summary-item clickable" title="Tüm analiz fonksiyonlarını göster">
+          <div class="summary-title">Analiz Kapsamı (Fonksiyon)</div>
           <div id="trackedFn" class="summary-value">0</div>
         </div>
         <div id="presentFnCard" class="summary-item">
@@ -361,11 +361,11 @@ int main() {
           <div id="presentFn" class="summary-value">0</div>
         </div>
         <div class="summary-item">
-          <div class="summary-title">Toplam Fonksiyon Cagrisi</div>
+          <div class="summary-title">Toplam Fonksiyon Çağrısı</div>
           <div id="totalCall" class="summary-value">0</div>
         </div>
-        <div id="vulnCallCard" class="summary-item clickable" title="Zafiyetli fonksiyonlari ve satirlari goster">
-          <div class="summary-title">Zafiyet Olusturan Cagri</div>
+        <div id="vulnCallCard" class="summary-item clickable" title="Zafiyetli fonksiyonları ve satırları göster">
+          <div class="summary-title">Zafiyet Oluşturan Çağrı</div>
           <div id="vulnCall" class="summary-value">0</div>
         </div>
       </div>
@@ -378,7 +378,7 @@ int main() {
         <div id="detailBody"></div>
       </div>
 
-      <h2 class="section-title">Kodda Bulunan Analiz Fonksiyonlari</h2>
+      <h2 class="section-title">Kodda Bulunan Analiz Fonksiyonları</h2>
       <table class="status-table">
         <thead>
           <tr>
@@ -390,7 +390,7 @@ int main() {
         <tbody id="statusRows"></tbody>
       </table>
 
-      <h2 class="section-title">Detayli Bulgular</h2>
+      <h2 class="section-title">Detaylı Bulgular</h2>
       <div id="vulnList" class="vuln-list"></div>
     </section>
   </div>
@@ -418,6 +418,15 @@ int main() {
     let lastStatusMap = {};
     let lastVulnItems = [];
 
+    function escapeHtml(value) {
+      return String(value)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+    }
+
     function showDetail(title, contentHtml) {
       detailTitle.textContent = title;
       detailBody.innerHTML = contentHtml;
@@ -433,18 +442,18 @@ int main() {
     function showTrackedFunctionsDetail() {
       const names = Object.keys(lastStatusMap || {});
       if (names.length === 0) {
-        showDetail("Analiz Kapsamindaki Fonksiyonlar", "<div class='empty-state'>Once bir analiz calistirin.</div>");
+        showDetail("Analiz Kapsamındaki Fonksiyonlar", "<div class='empty-state'>Önce bir analiz çalıştırın.</div>");
         return;
       }
 
       const sorted = [...names].sort((a, b) => a.localeCompare(b));
-      const items = sorted.map((name) => `<li>${name}</li>`).join("");
-      showDetail("Analiz Kapsamindaki Tum Fonksiyonlar", `<ol class="detail-list">${items}</ol>`);
+      const items = sorted.map((name) => `<li>${escapeHtml(name)}</li>`).join("");
+      showDetail("Analiz Kapsamındaki Tüm Fonksiyonlar", `<ol class="detail-list">${items}</ol>`);
     }
 
     function showVulnerableFunctionsDetail() {
       if (!lastVulnItems || lastVulnItems.length === 0) {
-        showDetail("Zafiyet Iceren Fonksiyonlar", "<div class='empty-state'>Zafiyetli fonksiyon bulunmadi.</div>");
+        showDetail("Zafiyet İçeren Fonksiyonlar", "<div class='empty-state'>Zafiyetli fonksiyon bulunmadı.</div>");
         return;
       }
 
@@ -461,11 +470,11 @@ int main() {
         .sort((a, b) => a[0].localeCompare(b[0]))
         .map(([fonksiyon, satirSet]) => {
           const satirlar = Array.from(satirSet).filter(Number.isFinite).sort((a, b) => a - b);
-          return `<li><strong>${fonksiyon}</strong> -> satirlar: ${satirlar.join(", ") || "-"}</li>`;
+          return `<li><strong>${escapeHtml(fonksiyon)}</strong> -> satırlar: ${satirlar.join(", ") || "-"}</li>`;
         })
         .join("");
 
-      showDetail("Zafiyet Iceren Fonksiyonlar ve Satirlari", `<ul class="detail-list">${rows}</ul>`);
+      showDetail("Zafiyet İçeren Fonksiyonlar ve Satırları", `<ul class="detail-list">${rows}</ul>`);
     }
 
     function clearResults() {
@@ -499,14 +508,14 @@ int main() {
 
       statusRows.innerHTML = "";
       if (usedEntries.length === 0) {
-        statusRows.innerHTML = `<tr><td colspan="3">Kodda analiz kapsamindaki fonksiyonlardan bulunamadi.</td></tr>`;
+        statusRows.innerHTML = `<tr><td colspan="3">Kodda analiz kapsamındaki fonksiyonlardan bulunamadı.</td></tr>`;
         return;
       }
 
       for (const [name, info] of usedEntries) {
         const tr = document.createElement("tr");
         tr.innerHTML = `
-          <td><strong>${name}</strong></td>
+          <td><strong>${escapeHtml(name)}</strong></td>
           <td>${info.kullanim_sayisi || 0}</td>
           <td>${info.bulgu_sayisi || 0}</td>
         `;
@@ -527,17 +536,17 @@ int main() {
         const cssLevel = level === "orta" ? "medium" : "high";
         const severityBadge = level === "orta"
           ? `<span class="badge" style="background: var(--warn-bg); color: var(--warn);">ORTA</span>`
-          : `<span class="badge" style="background: var(--danger-bg); color: var(--danger);">YUKSEK</span>`;
+          : `<span class="badge" style="background: var(--danger-bg); color: var(--danger);">YÜKSEK</span>`;
 
         const wrapper = document.createElement("article");
         wrapper.className = `vuln-item ${cssLevel}`;
         wrapper.innerHTML = `
           <div class="vuln-head">
-            <strong>${item.fonksiyon}</strong>
+            <strong>${escapeHtml(item.fonksiyon)}</strong>
             ${severityBadge}
           </div>
-          <div class="vuln-meta">Satir: ${item.satir_no} | Kod: ${item.kod_satiri || "-"}</div>
-          <div>${item.sebep || ""}</div>
+          <div class="vuln-meta">Satır: ${escapeHtml(item.satir_no)} | Kod: ${escapeHtml(item.kod_satiri || "-")}</div>
+          <div>${escapeHtml(item.sebep || "")}</div>
         `;
         vulnList.appendChild(wrapper);
       }
@@ -548,7 +557,7 @@ int main() {
       clearResults();
 
       if (!code) {
-        errorText.textContent = "Lutfen once C kodu girin.";
+        errorText.textContent = "Lütfen önce C kodu girin.";
         return;
       }
 
@@ -564,7 +573,7 @@ int main() {
 
         const data = await response.json();
         if (!response.ok) {
-          throw new Error(data.error || "Analiz sirasinda bir hata olustu.");
+          throw new Error(data.error || "Analiz sırasında bir hata oluştu.");
         }
 
         renderFunctionSummary(data.fonksiyon_durumlari);
